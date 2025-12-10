@@ -6,6 +6,8 @@ Thank you for your interest in contributing to this project. The goal of this li
 
 Before starting work on anything, read this document carefully.
 
+**PLEASE CONTRIBUTE SEQUENTIALLY FROM ISSUE 1 AND HENCEFORTH**
+
 ---
 
 ## How to Contribute
