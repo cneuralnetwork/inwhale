@@ -55,6 +55,11 @@ class SymmetricUniformQuantizer(BaseQuantizer):
         self.scale = torch.clamp(self.scale, min=1e-8)
 
     def quantize(self, x):
+        if self.bits == 1:
+            qx = torch.sign(x)
+            qx[qx == 0] = 1
+            return qx
+
         self.observer.observe(x)
         self._compute_scale(x)
 
@@ -194,6 +199,10 @@ class DeadZoneSymmetricQuantizer(BaseQuantizer):
         self.threshold = self.threshold_ratio * self.scale
 
     def quantize(self, x):
+        if self.bits == 1:
+            qx = torch.sign(x)
+            qx[qx == 0] = 1
+            return qx
         self.observer.observe(x)
         self._compute_params()
 
