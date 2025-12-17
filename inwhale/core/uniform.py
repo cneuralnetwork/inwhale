@@ -46,7 +46,7 @@ class SymmetricUniformQuantizer(BaseQuantizer):
         self.qmin = -(1 << (bits - 1))
         self.qmax = (1 << (bits - 1)) - 1
 
-    def _compute_scale(self, x):
+    def _compute_scale(self):
         min_val, max_val = self.observer.get_range()
 
         max_abs = torch.max(min_val.abs(), max_val.abs())
@@ -55,13 +55,17 @@ class SymmetricUniformQuantizer(BaseQuantizer):
         self.scale = torch.clamp(self.scale, min=1e-8)
 
     def quantize(self, x):
+        self.observer.observe(x)
+
         if self.bits == 1:
+            min_val, max_val = self.observer.get_range()
+            max_abs = torch.max(min_val.abs(), max_val.abs())
+            self.scale = torch.clamp(max_abs, min=1e-8)
             qx = torch.sign(x)
             qx[qx == 0] = 1
             return qx
 
-        self.observer.observe(x)
-        self._compute_scale(x)
+        self._compute_scale()
 
         qx = x / self.scale
         qx = self.rounding.round(qx)
@@ -199,11 +203,18 @@ class DeadZoneSymmetricQuantizer(BaseQuantizer):
         self.threshold = self.threshold_ratio * self.scale
 
     def quantize(self, x):
-        if self.bits == 1:
-            qx = torch.sign(x)
-            qx[qx == 0] = 1
-            return qx
         self.observer.observe(x)
+
+        if self.bits == 1:
+            min_val, max_val = self.observer.get_range()
+            max_abs = torch.max(min_val.abs(), max_val.abs())
+            self.scale = torch.clamp(max_abs, min=1e-8)
+            self.threshold = self.threshold_ratio * self.scale
+
+            qx = torch.sign(x)
+            qx[qx.abs() < self.threshold] = 0
+            return qx
+
         self._compute_params()
 
         mask = x.abs() < self.threshold
