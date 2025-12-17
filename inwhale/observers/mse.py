@@ -11,16 +11,15 @@ class MSEObserver(Observer):
         self.max_val = None
 
     def observe(self, x):
+        x = x.detach().flatten()
+
+        qmax = 2 ** (self.bits - 1) - 1
+        abs_max = x.abs().max()
 
         if abs_max == 0:
             self.min_val = torch.tensor(0.0, device=x.device)
             self.max_val = torch.tensor(1e-6, device=x.device)
             return
-
-        x = x.detach().flatten()
-
-        qmax = 2 ** (self.bits - 1) - 1
-        abs_max = x.abs().max()
 
         candidate_maxes = torch.linspace(
             0.1 * abs_max, abs_max, self.num_candidates, device=x.device
