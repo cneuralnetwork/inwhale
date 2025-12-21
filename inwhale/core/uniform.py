@@ -253,9 +253,9 @@ class MidTreadUniformQuantizer(BaseQuantizer):
     q = round(x / scale)
     x' = q * scale
     attributes:
-    n_bits : number of bits for quantization
-    x_min : minimum value of input range
-    x_max : maximum value of input range
+    bits : number of bits for quantization
+    min : minimum value of input range
+    max : maximum value of input range
     scale : quantization step size
     """
     def __init__(self, bits, observer, rounding): # initialize mid-tread quantizer
@@ -321,7 +321,8 @@ class MidRiseUniformQuantizer(BaseQuantizer):
         self.observer.observe(x)
         self._compute_scale()
 
-        qx = torch.floor(x / self.scale) + 0.5
+        qx = x / self.scale - 0.5
+        qx = self.rounding.round(qx)
         qx = torch.clamp(qx, self.qmin, self.qmax)
         return qx
     
