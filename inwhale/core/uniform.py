@@ -240,3 +240,91 @@ class DeadZoneSymmetricQuantizer(BaseQuantizer):
         )
 
         return dx
+
+
+
+class MidTreadUniformQuantizer(BaseQuantizer):
+    """
+    mid-tread uniform quantizer where zero is a quantization level
+    the quantizer typically has an odd number of quantization levels with zero at the central level.
+    zero is at a "tread" (flat part) of the staircase.
+    this is particularly useful for signals that frequently cross zero.
+    formula:
+    q = round(x / scale)
+    x' = q * scale
+    attributes:
+    bits : number of bits for quantization
+    min : minimum value of input range
+    max : maximum value of input range
+    scale : quantization step size
+    """
+    def __init__(self, bits, observer, rounding): # initialize mid-tread quantizer
+        super().__init__(bits)
+        self.observer = observer
+        self.rounding = rounding
+        self.scale = None
+
+        self.qmin = -(1 << (bits-1))
+        self.qmax = (1 << (bits - 1)) - 1
+
+    def _compute_scale(self):
+        min_val, max_val = self.observer.get_range()
+        max_abs = torch.max(min_val.abs(), max_val.abs())
+        self.scale = torch.clamp(max_abs / self.qmax, min=1e-8)
+    
+    def quantize(self, x):
+        """
+        quantize input values using mid_tread quantization.
+        x : input values to quantize
+        returns quantized value (qx)
+        """
+        self.observer.observe(x)
+        self._compute_scale()
+
+        qx = x / self.scale
+        qx = self.rounding.round(qx)
+        qx = torch.clamp(qx, self.qmin, self.qmax)
+        return qx
+    
+    def dequantize(self, qx):
+        return qx * self.scale
+    
+
+
+class MidRiseUniformQuantizer(BaseQuantizer):
+    """
+    mid-rise uniform quantizer where zero lies between two quantization levels,
+    The quantizer has an even number of quantization levels
+    symmetric around the origin.
+     Zero is NOT one of the output levels - it sits at a "riser"
+    between two quantization levels.
+    formula:
+    q = floor(x/scale) + 0.5
+    x' = q*scale
+    """
+
+    def __init__(self, bits, observer, rounding):
+        super().__init__(bits)
+        self.observer = observer
+        self.rounding = rounding
+        self.scale = None
+
+        self.qmin = -(1 << (bits - 1))
+        self.qmax = (1 << (bits - 1))
+
+    def _compute_scale(self):
+        min_val, max_val = self.observer.get_range()
+        max_abs = torch.max(min_val.abs(), max_val.abs())
+        self.scale = torch.clamp(max_abs / self.qmax, min=1e-8)
+
+    def quantize(self, x):
+        self.observer.observe(x)
+        self._compute_scale()
+
+        qx = x / self.scale - 0.5
+        qx = self.rounding.round(qx)
+        qx = torch.clamp(qx, self.qmin, self.qmax)
+        return qx
+    
+    def dequantize(self, qx):
+        return qx * self.scale
