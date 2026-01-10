@@ -6,13 +6,13 @@ from inwhale.rounding.nearest import NearestRounding
 
 x = torch.tensor([
     [-1.0, 1.0, 0.5, -0.5],
-    [-10.0, 15.0, 8.0, -5,0],
+    [-10.0, 15.0, 8.0, -5.0],
 ])
 observer = MinMaxObserver(axis=0)
 rounding = NearestRounding()
 
 q = PerChannelAsymmetricUniformQuantizer(
-    bits=8, observer=observer, rounidng=rounding, axis=0, signed=True,
+    bits=8, observer=observer, rounding=rounding, axis=0, signed=True,
 )
 
 """

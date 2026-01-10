@@ -396,7 +396,6 @@ class PerChannelAsymmetricUniformQuantizer(BaseQuantizer):
             observer = MinMaxObserver()
             observer.observe(x_c)
             min_val, max_val = observer.get_range()
-            min_val, max_val = self.observer.get_range()
 
             if max_val == min_val:
                 scale = torch.tensor(1.0, device=x.device)
