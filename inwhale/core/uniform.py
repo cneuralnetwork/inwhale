@@ -1,5 +1,6 @@
 import torch
 from .quantizer import BaseQuantizer
+from inwhale.observers.minmax import MinMaxObserver
 
 
 class SymmetricUniformQuantizer(BaseQuantizer):
@@ -322,9 +323,120 @@ class MidRiseUniformQuantizer(BaseQuantizer):
         self._compute_scale()
 
         qx = x / self.scale - 0.5
-        qx = self.rounding.round(qx)
+        qx = torch.floor(x / self.scale) + 0.5
         qx = torch.clamp(qx, self.qmin, self.qmax)
         return qx
     
     def dequantize(self, qx):
         return qx * self.scale
+
+
+
+
+class PerChannelAsymmetricUniformQuantizer(BaseQuantizer):
+    """
+    Per-channel quantization applies uniform quantization independently to each channel of the tensor. 
+    Each channel has its own scale and zero-point, rather than sharing a single scale and zero-point across the entire tensor.
+
+    why do we need per-channel quantizer, when already per-tensor exists?
+    Let a weight tensor has 2 output channels, 
+    channel 0: [-1, 1]
+    channel 1: [- 10, 15]
+
+    per-tensor quantization uses :  Xmin = -10 and Xmax = 15, so both channels shares he same scale and zero point.
+    But in result , channel 1 is OK , but channel 0 gives almost 0 for all the values , because small numbers are crushed by scale chosen for big numbers.
+    leading to high precision loss. 
+    To fix this , per-channel treats each output channel in a tensor independently.
+    For each channel seperate xmin , xmax, scale , zero point is calcuated .
+    As a result , per-channel quantization reduces quantization error, specially for tensors where different channels have very different values.
+    formulas we will use (the same as per-tensor , but they are applied independently to each channel, than a whole tensor):
+    for a tensor X , channels are indexed by c.
+    x_min = min(X[c])
+    x_max = max(X[c])
+
+    scale[c] = (x_max[c] - x_mi[c]) / (qmax - qmin)
+    zero_point[c] = round(qmin - x_min[c] / scale[c]) , then clamped to the rance [qmin, qmax]
+    qx = clamp(round(x / scale[c] + zero_point[c]), qmin, qmax)  // quantized value of x
+    x' = (q - zero_point[c]) * scale[c] // dequantize
+    """
+    def __init__(self, bits, observer, rounding, axis=0, signed=False):
+        super().__init__(bits)
+
+        self.axis = axis
+        self.observer = observer
+        self.rounding = rounding
+
+        if signed:
+            self.qmin = -(1 << (bits - 1))
+            self.qmax = (1 << (bits - 1)) - 1
+        else:
+            self.qmin = 0
+            self.qmax = (1 << bits) - 1
+
+        self.scale = None
+        self.zero_point = None
+
+
+    
+    def quantize(self, x):
+        """
+        Quantize input tensor using per-channel asymmetric uniform quantization.
+        """
+        # Move channel axis to front for easy iteration
+        x_perm = x.movedim(self.axis, 0)
+        num_channels = x_perm.shape[0]
+
+        scales = []
+        zero_points = []
+        qxs = []
+
+        for c in range(num_channels):
+            x_c = x_perm[c]
+
+            observer = MinMaxObserver()
+            observer.observe(x_c)
+            min_val, max_val = observer.get_range()
+            min_val, max_val = self.observer.get_range()
+
+            if max_val == min_val:
+                scale = torch.tensor(1.0, device=x.device)
+                zero_point = torch.tensor(self.qmin, device=x.device)
+            else:
+                scale = (max_val - min_val) / (self.qmax - self.qmin)
+                scale = torch.clamp(scale, min=1e-8)
+
+                zp_real = self.qmin - min_val / scale
+                zero_point = torch.clamp(
+                    self.rounding.round(zp_real), self.qmin, self.qmax
+                )
+
+            qx_c = x_c / scale + zero_point
+            qx_c = self.rounding.round(qx_c)
+            qx_c = torch.clamp(qx_c, self.qmin, self.qmax)
+
+            scales.append(scale)
+            zero_points.append(zero_point)
+            qxs.append(qx_c)
+
+        # stack per-channel params
+        self.scale = torch.stack(scales)
+        self.zero_point = torch.stack(zero_points)
+
+        # restore original axis order
+        qx = torch.stack(qxs).movedim(0, self.axis)
+        return qx
+
+    
+    def dequantize(self, qx):
+        """
+        Dequantize an integer tensor back to floating-point values
+        """
+        scale = self.scale.view(
+            *([1] * self.axis), -1, *([1] * (qx.dim() - self.axis - 1))
+        )
+        zero_point = self.zero_point.view(
+            *([1] * self.axis), -1, *([1] * (qx.dim() - self.axis - 1))
+        )
+        return (qx - zero_point) * scale
+
+    
