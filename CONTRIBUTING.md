@@ -109,14 +109,14 @@ Use descriptive messages:
 git push origin feature-your-feature
 ```
 
-2. Open a Pull Request.
-3. In the PR description, include:
+1. Open a Pull Request.
+2. In the PR description, include:
 
    * What you implemented
    * Why it is useful
    * Any mathematical references
    * Tests added
-4. Wait for review and make requested updates.
+3. Wait for review and make requested updates.
 
 PRs should be small and focused. Avoid mixing multiple features.
 
@@ -153,4 +153,3 @@ Examples:
 * Write a tutorial demonstrating how symmetric vs asymmetric quantization differ.
 * Add plots showing quantization error.
 * Add explanations inside docstrings.
-
