@@ -37,8 +37,8 @@ Goal: establish numerical conventions, APIs, and reference behavior.
 
 Goal: implement non-linear mappings and codebook-based schemes.
 
-- [ ] Logarithmic (power-of-two) quantization
-- [ ] µ-law companding
+- [x] Logarithmic (power-of-two) quantization
+- [x] µ-law companding
 - [ ] A-law companding
 
 - [ ] LUT-based learned non-uniform quantizer
