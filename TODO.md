@@ -39,7 +39,7 @@ Goal: implement non-linear mappings and codebook-based schemes.
 
 - [ ] Logarithmic (power-of-two) quantization
 - [ ] µ-law companding
-- [ ] A-law companding
+- [x] A-law companding
 
 - [ ] LUT-based learned non-uniform quantizer
 - [ ] Vector quantizer (basic k-means)
