@@ -113,7 +113,7 @@ Goal: training-time quantization simulation.
 - [ ] INQ (Incremental Quantization)
 - [ ] DoReFa-Net
 
-- [ ] Ternary quantization (TTQ)
+- [x] Ternary quantization (TTQ)
 - [ ] Binary quantization
   - [ ] XNOR-Net
   - [ ] BinaryConnect
