@@ -128,7 +128,7 @@ Goal: practical large-model compression techniques.
 - [ ] NF4 format
 - [ ] FP4 format
 
-- [ ] Group-wise quantization
+- [x] Group-wise quantization
 - [ ] Per-row quantization
 - [ ] Per-column quantization
 
