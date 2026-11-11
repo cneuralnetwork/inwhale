@@ -129,8 +129,8 @@ Goal: practical large-model compression techniques.
 - [ ] FP4 format
 
 - [ ] Group-wise quantization
-- [ ] Per-row quantization
-- [ ] Per-column quantization
+- [x] Per-row quantization
+- [x] Per-column quantization
 
 - [ ] Attention-specific quantization
 - [ ] Outlier-aware activation quantization
