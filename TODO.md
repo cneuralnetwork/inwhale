@@ -125,8 +125,8 @@ Goal: training-time quantization simulation.
 
 Goal: practical large-model compression techniques.
 
-- [ ] NF4 format
-- [ ] FP4 format
+- [x] NF4 format
+- [x] FP4 format
 
 - [ ] Group-wise quantization
 - [ ] Per-row quantization
