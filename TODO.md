@@ -136,9 +136,9 @@ Goal: practical large-model compression techniques.
 - [ ] Outlier-aware activation quantization
 
 - [ ] Quantized LoRA (QLoRA)
-- [ ] Mixed-precision activations
-  - [ ] 8-bit base
-  - [ ] 16-bit outliers
+- [x] Mixed-precision activations
+  - [x] 8-bit base
+  - [x] 16-bit outliers
 
 ## Milestone 8: Vector & Codebook Quantization (Advanced)
 
