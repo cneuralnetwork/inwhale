@@ -133,7 +133,7 @@ Goal: practical large-model compression techniques.
 - [ ] Per-column quantization
 
 - [ ] Attention-specific quantization
-- [ ] Outlier-aware activation quantization
+- [x] Outlier-aware activation quantization
 
 - [ ] Quantized LoRA (QLoRA)
 - [ ] Mixed-precision activations
